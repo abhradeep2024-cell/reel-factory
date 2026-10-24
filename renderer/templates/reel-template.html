@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  /* 1080x1920 reel stage — deterministic: every pixel is a pure function of time t (seconds) */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1080px; height:1920px; overflow:hidden; background:#0B0F1A; }
+  #stage { position:relative; width:1080px; height:1920px; font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif; }
+
+  /* animated gradient backdrop (driven by t via --bg1/--bg2) */
+  #bg { position:absolute; inset:0; background:linear-gradient(135deg, var(--bg1,#0B0F1A), var(--bg2,#131B2E)); }
+  #glow { position:absolute; width:1400px; height:1400px; border-radius:50%; filter:blur(160px); opacity:.35;
+          background:radial-gradient(circle, var(--accent,#7C9AFF) 0%, transparent 62%); }
+  #grain { position:absolute; inset:0; opacity:.05; background-image:repeating-conic-gradient(#fff 0 .0001turn, transparent .0001turn .0004turn); mix-blend-mode:overlay; }
+
+  /* progress bar */
+  #bar { position:absolute; top:0; left:0; height:14px; background:var(--accent,#7C9AFF); width:0; }
+
+  /* handle + day chip */
+  #handle { position:absolute; bottom:96px; width:100%; text-align:center; font-size:34px; font-weight:600; color:rgba(255,255,255,.55); letter-spacing:1px; }
+
+  /* scene text layer */
+  #layer { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 110px; text-align:center; }
+  .headline { color:#fff; font-weight:800; line-height:1.08; letter-spacing:-1px; }
+  .line { color:rgba(255,255,255,.85); font-weight:500; line-height:1.3; }
+  .cap { position:absolute; bottom:220px; width:100%; text-align:center; color:rgba(255,255,255,.78); font-size:38px; font-weight:500; padding:0 90px; }
+  .chip { display:inline-block; background:var(--accent,#7C9AFF); color:#0B0F1A; font-weight:800; border-radius:999px; }
+
+  .word { display:inline-block; white-space:pre; }
+  .lw { display:block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="glow"></div>
+  <div id="grain"></div>
+  <div id="bar"></div>
+  <div id="layer"></div>
+  <div id="cap" class="cap"></div>
+  <div id="handle">@yourhandle</div>
+</div>
+
+<script>
+window.__SCENE__ = /*__SCENE_DATA__*/ null;
+
+// ── easing helpers ──
+const clamp = (x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const eOut = x=>1-Math.pow(1-clamp(x),3);
+const eInOut = x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const eBack = x=>{x=clamp(x);const c=1.70158+1;return 1+c*Math.pow(x-1,3)+1.70158*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+function el(tag, cls, txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+
+// ── builds the scene DOM once, then seek(t) updates styles only ──
+let built=false, words=[], lineEls=[], capEl=null, hEl=null;
+
+function build(s){
+  const layer=document.getElementById('layer');
+  layer.innerHTML='';
+  words=[]; lineEls=[];
+  const size = s.kind==='hook' ? 128 : s.kind==='cta' ? 112 : 96;
+  hEl = el('div','headline');
+  hEl.style.fontSize=size+'px';
+  s.headline.split(' ').forEach(w=>{
+    const span=el('span','word', w+' ');
+    hEl.appendChild(span); words.push(span);
+  });
+  layer.appendChild(hEl);
+  (s.lines||[]).forEach((txt,i)=>{
+    const l=el('div','line', txt);
+    l.style.fontSize='54px'; l.style.marginTop=(i===0?42:18)+'px';
+    layer.appendChild(l); lineEls.push(l);
+  });
+  capEl=document.getElementById('cap');
+  capEl.textContent = s.caption||'';
+  built=true;
+}
+
+// ── deterministic time-driver ──
+window.seek = function(t){
+  const s=window.__SCENE__; if(!s) return;
+  const D=s.duration||10;
+  if(!built) build(s);
+
+  // backdrop hue drift + glow orbit (function of absolute t)
+  const hue = Math.floor(225 + t*4) % 360;
+  document.getElementById('bg').style.setProperty('--bg1', `hsl(${hue}, 42%, 7%)`);
+  document.getElementById('bg').style.setProperty('--bg2', `hsl(${(hue+40)%360}, 34%, 13%)`);
+  const glow=document.getElementById('glow');
+  const a=t*0.55;
+  glow.style.background = `radial-gradient(circle, ${s.accent||'#7C9AFF'} 0%, transparent 62%)`;
+  glow.style.transform = `translate(${Math.sin(a)*160-700+540}px, ${Math.cos(a*.8)*220-700+700}px)`;
+
+  // progress bar
+  document.getElementById('bar').style.width = (clamp(t/D)*1080)+'px';
+
+  // headline words pop in staggered (1.2s window)
+  const per = 1.2/Math.max(words.length,1);
+  words.forEach((w,i)=>{
+    const p = eBack((t - i*per)/0.45);
+    w.style.opacity = clamp(p*1.4);
+    w.style.transform = `translateY(${lerp(38,0,p)}px) scale(${lerp(.92,1,p)})`;
+  });
+
+  // subtle headline breathing after entrance
+  if (t>1.4){
+    const b = Math.sin((t-1.4)*2.1)*0.012;
+    hEl.style.transform = `scale(${1+b})`;
+  }
+
+  // support lines: sequential slide-up
+  lineEls.forEach((l,i)=>{
+    const p = eOut((t - 1.5 - i*1.1)/0.6);
+    l.style.opacity = clamp(p);
+    l.style.transform = `translateY(${lerp(30,0,p)}px)`;
+  });
+
+  // caption fade at 60% of scene
+  if (capEl){
+    const p = eInOut((t - D*0.55)/0.7);
+    capEl.style.opacity = clamp(p)*0.95;
+  }
+
+  // kind-specific flourishes
+  const layer=document.getElementById('layer');
+  if (s.kind==='hook'){
+    layer.style.transform = `scale(${lerp(.97,1,eOut(t/0.9))})`;
+  } else if (s.kind==='quote'){
+    hEl.style.textShadow = `0 0 ${60*Math.abs(Math.sin(t*.9))}px ${s.accent||'#7C9AFF'}`;
+  } else if (s.kind==='cta'){
+    const bounce = Math.abs(Math.sin(t*3.4));
+    words.forEach(w=>{ w.style.transform = `translateY(${-18*bounce}px) scale(${1+0.04*bounce})`; });
+  }
+};
+
+// initial paint (t=0)
+window.seek(0);
+</script>
+</body>
+</html>

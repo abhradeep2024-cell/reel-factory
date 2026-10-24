@@ -1,0 +1,16 @@
+# secrets — never commit
+.env
+*.pem
+**/.dev.vars
+
+# deps / build
+node_modules/
+dist/
+.wrangler/
+worker/dist/
+renderer/out/
+renderer/frames/
+*.mp4
+*.webm
+__pycache__/
+.DS_Store

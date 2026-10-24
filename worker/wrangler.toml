@@ -1,0 +1,35 @@
+name = "reel-factory"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# TODO: paste your Account ID (dash.cloudflare.com -> home page, right sidebar)
+account_id = "REPLACE_WITH_ACCOUNT_ID"
+
+# ── Cron triggers (UTC). IST = UTC+5:30 ──
+# 02:30 UTC = 08:00 IST  -> script reminder check
+# 13:00 UTC = 18:30 IST  -> daily post at default best time
+# 16:30 UTC = 22:00 IST  -> learning loop (pull insights)
+[triggers]
+crons = ["30 2 * * *", "0 13 * * *", "30 16 * * *"]
+
+[vars]
+WORKER_URL = "https://reel-factory.<subdomain>.workers.dev"
+GH_OWNER = "abhradeep2024-cell"
+GH_REPO = "reel-factory"
+USER_EMAIL = "abhradeep2024@gmail.com"
+TIMEZONE_OFFSET_MIN = "330" # IST
+DEFAULT_POST_TIME_UTC = "13:00"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "reel-factory-db"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+[[r2_buckets]]
+binding = "REELS"
+bucket_name = "reel-factory-reels"
+
+# Secrets (set via: wrangler secret put NAME)
+# GH_RENDER_TOKEN, RENDER_SECRET, GEMINI_API_KEY,
+# IG_USER_ID, IG_ACCESS_TOKEN, RESEND_API_KEY

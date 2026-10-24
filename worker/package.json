@@ -1,0 +1,16 @@
+{
+  "name": "reel-factory-worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute reel-factory-db --remote --file=../db/schema.sql",
+    "db:local": "wrangler d1 execute reel-factory-db --local --file=../db/schema.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261024.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.0.0"
+  }
+}

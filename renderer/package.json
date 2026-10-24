@@ -1,0 +1,12 @@
+{
+  "name": "reel-factory-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^23.5.0"
+  }
+}

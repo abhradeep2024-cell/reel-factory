@@ -1,0 +1,47 @@
+name: render-reel
+
+on:
+  repository_dispatch:
+    types: [render-reel]
+  workflow_dispatch:
+    inputs:
+      payload_json:
+        description: 'Full payload JSON {weekId,reelId,scenes,callbackUrl}'
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: cd renderer && npm install --no-audit --no-fund
+
+      - name: Write payload
+        env:
+          DISPATCH_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          MANUAL_PAYLOAD: ${{ inputs.payload_json }}
+        run: |
+          if [ "$DISPATCH_PAYLOAD" != "null" ] && [ -n "$DISPATCH_PAYLOAD" ]; then
+            echo "$DISPATCH_PAYLOAD" > payload.json
+          elif [ -n "$MANUAL_PAYLOAD" ]; then
+            echo "$MANUAL_PAYLOAD" > payload.json
+          else
+            echo '{"reelId":0,"scenes":[{"idx":0,"kind":"hook","duration":10,"headline":"test","lines":["demo"],"caption":"test render","accent":"#7C9AFF"}]}' > payload.json
+          fi
+
+      - name: Render 60s reel (Puppeteer + FFmpeg)
+        run: cd renderer && node render.mjs --payload ../payload.json
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reel-${{ github.run_id }}
+          path: renderer/out/reel.mp4
+          retention-days: 14
