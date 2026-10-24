@@ -1,0 +1,63 @@
+name: render
+
+# Render runner: polls the Reel Factory API for queued render jobs, renders
+# them (Chromium + FFmpeg), uploads artifacts and reports results.
+# Public repo: standard runners are free. Private: counts against the
+# 2,000 min/month free quota (7 reels/week ~= 300-450 min/month).
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      max_jobs:
+        description: "Max jobs to render this run"
+        default: "10"
+  repository_dispatch:
+    types: [render]
+
+concurrency:
+  group: render-pipeline
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify ffmpeg
+        run: ffmpeg -version | head -2
+
+      - name: Run render pipeline
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+          RUNNER_NAME: github-actions
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$INTERNAL_API_KEY" ]; then
+            echo "::error::Missing secrets. Add APP_URL and INTERNAL_API_KEY to the repository secrets (see docs/SETUP.md)."
+            exit 1
+          fi
+          node render/pipeline.mjs --job --api "$APP_URL" --key "$INTERNAL_API_KEY" --max-jobs "${{ inputs.max_jobs || '10' }}"
+
+      - name: Upload rendered artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-${{ github.run_id }}
+          path: out/
+          retention-days: 14
+          if-no-files-found: ignore

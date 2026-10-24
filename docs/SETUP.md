@@ -112,6 +112,33 @@ Reminders fire daily at 08:00 Asia/Kolkata (cron `30 2 * * *` UTC) while the upc
 - Cron triggers ship with the deploy: daily reminder check, hourly production tick (publish due reels, sync metrics, recover stuck jobs), Monday planner safety net.
 - The learning loop runs on whatever real metrics exist; with fewer than 3 measured reels it reports "not enough data" instead of guessing.
 
+## 7. Enabling CI (one-time)
+
+The GitHub Actions workflows (render runner + deploy) live in this repository under `.github/workflows/`. If they are missing on GitHub (a fine-grained PAT without the **Workflows: read and write** permission cannot push workflow files), enable CI in one of two ways:
+
+1. **Update the PAT** (recommended): GitHub -> Settings -> Developer settings -> Fine-grained tokens -> your token -> Repository permissions -> *Workflows: Read and write*. Then push `.github/workflows/` (or ask the agent to).
+2. **Create via web UI**: copy the reference copies `docs/workflows-render.yml` and `docs/workflows-deploy.yml` into `.github/workflows/render.yml` and `.github/workflows/deploy.yml` on GitHub.
+
+Then add repository secrets (Settings -> Secrets and variables -> Actions):
+
+| Secret | Value |
+|---|---|
+| `APP_URL` | `https://reel-factory.<subdomain>.workers.dev` |
+| `INTERNAL_API_KEY` | same value as the worker secret |
+| `CLOUDFLARE_API_TOKEN` | a token with Workers Scripts Write + D1 Write + R2 Write (the initial deployment used a short-lived minted token; create a fresh one for CI) |
+| `CLOUDFLARE_ACCOUNT_ID` | your account ID |
+
+## 8. R2 activation (needed for live Instagram publishing)
+
+R2 stores rendered MP4s at public URLs - Instagram requires a publicly fetchable `video_url`. Enable it once in the Cloudflare dashboard (Storage & Databases -> R2 -> Activate; the 10GB free tier needs no payment), then:
+
+```bash
+npx wrangler r2 bucket create reel-factory-media
+npm run deploy:r2
+```
+
+Until R2 is active, rendered videos remain GitHub Actions artifacts and publishing stays dry-run (honest by design).
+
 ## Security checklist
 
 - [ ] Rotate the GitHub PAT and Cloudflare token you used during initial setup

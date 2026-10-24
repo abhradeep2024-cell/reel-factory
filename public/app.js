@@ -1,5 +1,5 @@
 // Reel Factory dashboard - router + shell.
-import { API, $, esc, toast } from './api.js';
+import { API, $, esc, toast, modeBadge } from './api.js';
 import { renderOverview, renderScript, renderReels, renderVideos, renderInsights, renderSettings } from './views.js';
 
 const ROUTES = {
