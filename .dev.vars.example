@@ -1,0 +1,35 @@
+# Copy to .dev.vars for local development (the real file is gitignored).
+# Production values are set with: wrangler secret put <NAME>
+
+# Dashboard admin password (required)
+ADMIN_PASSWORD=change-me-strong-password
+
+# Cookie signing secret (required). Generate: openssl rand -hex 32
+SESSION_SECRET=
+
+# Shared key between this app and the GitHub Actions render runner.
+# Generate: openssl rand -hex 32
+INTERNAL_API_KEY=
+
+# --- AI (optional; deterministic mock planner is used when empty) ---
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+
+# --- Instagram Graph API (optional; dry-run publishing when empty) ---
+IG_USER_ID=
+IG_ACCESS_TOKEN=
+
+# --- Outbound email (optional; log-only mode when empty) ---
+# providers: log | resend | brevo
+EMAIL_PROVIDER=log
+RESEND_API_KEY=
+BREVO_API_KEY=
+REMINDER_EMAIL=abhradeep2024@gmail.com
+
+# --- Misc ---
+# Public origin of this deployment (used to build media URLs Instagram can fetch), no trailing slash
+APP_ORIGIN=
+# GitHub repo for the render runner (owner/name)
+GH_REPO=
+# Optional PAT with repo permissions (enables repository_dispatch push from the Worker)
+GH_TOKEN=

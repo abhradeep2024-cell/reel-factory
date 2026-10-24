@@ -1,0 +1,30 @@
+// Reel Factory — Cloudflare Worker configuration (no-R2 variant)
+// Use this config when the account has NOT enabled R2.
+// When R2 is enabled, deploy with: npm run deploy:r2  (wrangler.r2.jsonc)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "reel-factory",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/internal/*", "/media/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "reel-factory-db",
+      "database_id": "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a89",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "30 2 * * *",
+      "0 * * * *",
+      "35 2 * * 1"
+    ]
+  },
+  "observability": { "enabled": true }
+}

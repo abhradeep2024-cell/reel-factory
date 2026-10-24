@@ -1,0 +1,29 @@
+{
+  "name": "reel-factory",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Automated Instagram Reel factory: weekly script -> 7 animated reels (HTML->MP4, no video model) -> scheduled publishing -> analytics learning loop",
+  "scripts": {
+    "dev": "wrangler dev --port 3000",
+    "test": "node --test tests/unit/*.test.mjs",
+    "e2e": "node tests/e2e/run.mjs",
+    "render:sample": "node render/pipeline.mjs --sample --out out/sample",
+    "db:local": "wrangler d1 migrations apply DB --local",
+    "db:remote": "wrangler d1 migrations apply DB --remote",
+    "deploy": "wrangler deploy",
+    "deploy:r2": "wrangler deploy --config wrangler.r2.jsonc"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.0.0",
+    "playwright": "^1.40.0",
+    "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261019.1": true,
+    "esbuild@0.28.2": true
+  }
+}
